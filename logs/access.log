@@ -1,0 +1,2 @@
+2024-11-09 01:52:24 [ERROR]: Expected ',' or '}' after property value in JSON at position 29 
+2024-11-09 01:53:01 [ERROR]: Cannot read properties of undefined (reading 'loginUseCase') 
