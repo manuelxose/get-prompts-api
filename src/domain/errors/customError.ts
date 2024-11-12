@@ -25,4 +25,8 @@ export class CustomError extends Error {
   static forbidden(message: string): CustomError {
     return new CustomError(message, 403);
   }
+
+  static serverError(message: string): CustomError {
+    return new CustomError(message, 500);
+  }
 }

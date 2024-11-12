@@ -153,12 +153,22 @@ export class Validators {
 
   /**
    * Valida la contraseña asegurando que tenga al menos 8 caracteres, incluyendo letras y números.
+   * Devuelve true automáticamente si detecta que la contraseña está hasheada.
    * @param password - La contraseña a validar.
-   * @returns True si la contraseña es válida, false de lo contrario.
+   * @returns True si la contraseña es válida o si está hasheada, false de lo contrario.
    */
   static isValidPassword(password: string): boolean {
     const minLength = 8;
     const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&_\-.]{8,}$/;
+
+    // Verificar si es un hash de bcrypt (generalmente tiene 60 caracteres y comienza con $2b$ o $2a$)
+    const isHashed = password.length === 60 && password.startsWith("$2");
+    if (isHashed) {
+      console.log("Detected hashed password, automatically returning true.");
+      return true;
+    }
+
+    // Validar si es una contraseña en texto plano
     console.log("password: ", password);
     console.log("passwordRegex: ", passwordRegex);
     console.log("passwordRegex.test(password): ", passwordRegex.test(password));
@@ -166,6 +176,11 @@ export class Validators {
     console.log("password.length >= minLength: ", password.length >= minLength);
 
     return password.length >= minLength && passwordRegex.test(password);
+  }
+
+  static isHashedPassword(password: string): boolean {
+    const passwordRegex = /^(?=.*[A-Za-z])(?=.*\d)[A-Za-z\d@$!%*?&_\-.]{8,}$/;
+    return passwordRegex.test(password);
   }
 
   static isValidBoolean(value: any): boolean {

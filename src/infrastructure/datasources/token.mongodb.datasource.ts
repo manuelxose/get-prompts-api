@@ -1,8 +1,10 @@
 // src/infrastructure/data-sources/TokenMongoDataSource.ts
 
 import logger from "../../core/adapters/logger.adapter";
-import { IRefreshToken } from "../../data/mongodb/models";
-import { RefreshTokenModel } from "../../data/mongodb/models/token.model";
+import {
+  IRefreshToken,
+  RefreshTokenModel,
+} from "../../data/mongodb/models/token.model";
 import { TokenDataSource } from "../../domain/datasources";
 import { RefreshTokenDTO } from "../../domain/dtos/token";
 import { CustomError } from "../../domain/errors";
@@ -10,12 +12,14 @@ import { TokenMapper } from "../mappers";
 
 class TokenMongoDataSource implements TokenDataSource {
   /**
-   * Añadir un nuevo token de refresco.
-   * @param refreshToken DTO del token de refresco.
+   * Añade un nuevo token de refresco.
+   * @param refreshToken - DTO del token de refresco.
+   * @returns Promise<void>
+   * @throws CustomError si el token ya existe o ocurre un error.
    */
   async addRefreshToken(refreshToken: RefreshTokenDTO): Promise<void> {
     logger.info(
-      `TokenMongoDataSource: Adding refresh token for user ${refreshToken.userId}`
+      `Añadiendo token de refresco para el usuario ${refreshToken.userId}`
     );
 
     try {
@@ -24,27 +28,29 @@ class TokenMongoDataSource implements TokenDataSource {
       );
       await tokenDoc.save();
       logger.info(
-        `TokenMongoDataSource: Added refresh token ${refreshToken.token} for user ${refreshToken.userId}`
+        `Token de refresco ${refreshToken.token} añadido para el usuario ${refreshToken.userId}`
       );
     } catch (error: any) {
-      logger.error(`TokenMongoDataSource.addRefreshToken: ${error.message}`);
+      logger.error(`Error al añadir token de refresco: ${error.message}`);
       if (error.code === 11000) {
         // Error de clave duplicada
-        throw CustomError.badRequest("Refresh token already exists");
+        throw CustomError.badRequest("El token de refresco ya existe");
       }
       throw CustomError.internal(
-        "An error occurred while adding the refresh token"
+        "Ocurrió un error al añadir el token de refresco"
       );
     }
   }
 
   /**
-   * Remover un token de refresco existente.
-   * @param refreshTokenDTO DTO del token de refresco a remover.
+   * Elimina un token de refresco existente.
+   * @param refreshTokenDTO - DTO del token de refresco a eliminar.
+   * @returns Promise<void>
+   * @throws CustomError si el token no es encontrado o ocurre un error.
    */
   async removeRefreshToken(refreshTokenDTO: RefreshTokenDTO): Promise<void> {
     logger.info(
-      `TokenMongoDataSource: Removing refresh token ${refreshTokenDTO.token} for user ${refreshTokenDTO.userId}`
+      `Eliminando token de refresco ${refreshTokenDTO.token} para el usuario ${refreshTokenDTO.userId}`
     );
 
     try {
@@ -54,36 +60,36 @@ class TokenMongoDataSource implements TokenDataSource {
       });
 
       if (!result) {
-        throw CustomError.notFound("Refresh token not found");
+        throw CustomError.notFound("Token de refresco no encontrado");
       }
 
       logger.info(
-        `TokenMongoDataSource: Removed refresh token ${refreshTokenDTO.token} for user ${refreshTokenDTO.userId}`
+        `Token de refresco ${refreshTokenDTO.token} eliminado para el usuario ${refreshTokenDTO.userId}`
       );
     } catch (error: unknown) {
-      logger.error(`TokenMongoDataSource.removeRefreshToken: ${error}`);
+      logger.error(`Error al eliminar token de refresco: ${error}`);
       if (error instanceof CustomError) {
         throw error;
       } else {
         throw CustomError.internal(
-          "An error occurred while removing the refresh token"
+          "Ocurrió un error al eliminar el token de refresco"
         );
       }
     }
   }
 
   /**
-   * Encontrar un token de refresco específico.
-   * @param userId ID del usuario.
-   * @param refreshToken Token de refresco.
-   * @returns El DTO del token de refresco si existe, o null.
+   * Encuentra un token de refresco específico.
+   * @param userId - ID del usuario.
+   * @param refreshToken - Token de refresco.
+   * @returns Promise<RefreshTokenDTO | null> - DTO del token de refresco si existe, o null.
    */
   async findRefreshToken(
     userId: string,
     refreshToken: string
   ): Promise<RefreshTokenDTO | null> {
     logger.info(
-      `TokenMongoDataSource: Finding refresh token ${refreshToken} for user ${userId}`
+      `Buscando token de refresco ${refreshToken} para el usuario ${userId}`
     );
 
     try {
@@ -94,16 +100,16 @@ class TokenMongoDataSource implements TokenDataSource {
 
       if (!tokenDoc) {
         logger.warn(
-          `TokenMongoDataSource: Refresh token ${refreshToken} not found for user ${userId}`
+          `Token de refresco ${refreshToken} no encontrado para el usuario ${userId}`
         );
         return null;
       }
 
       return TokenMapper.toDTO(tokenDoc);
     } catch (error: unknown) {
-      logger.error(`TokenMongoDataSource.findRefreshToken: ${error}`);
+      logger.error(`Error al buscar token de refresco: ${error}`);
       throw CustomError.internal(
-        "An error occurred while finding the refresh token"
+        "Ocurrió un error al buscar el token de refresco"
       );
     }
   }

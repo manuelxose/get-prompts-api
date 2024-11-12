@@ -1,20 +1,21 @@
 // src/application/use-cases/auth/LogoutUser.ts
 
 import { LogoutUserDTO } from "../../../domain/dtos/auth";
-import { CustomError } from "../../../domain/errors/";
+import { CustomError } from "../../../domain/errors";
 import { AuthRepository, TokenRepository } from "../../../domain/repositories";
 import { LogoutUserResponse } from "../../interfaces/auth/LogoutUserResponse";
 
 export class LogoutUser {
-  constructor(
-    private authRepository: AuthRepository,
-    private tokenRepository: TokenRepository
-  ) {}
+  constructor(private tokenRepository: TokenRepository) {}
 
+  /**
+   * Cierra sesión de un usuario.
+   * @param logoutUserDTO - DTO que contiene los detalles de cierre de sesión.
+   * @returns Promise<LogoutUserResponse> - Respuesta del cierre de sesión.
+   * @throws CustomError si ocurre un error durante el cierre de sesión.
+   */
   async execute(logoutUserDTO: LogoutUserDTO): Promise<LogoutUserResponse> {
     try {
-      console.log("Cierre de sesión de usuario: ", logoutUserDTO);
-
       const { userId, refreshToken } = logoutUserDTO;
 
       // Validar el refresh token
@@ -23,13 +24,13 @@ export class LogoutUser {
         refreshToken
       );
       if (!existingToken) {
-        throw CustomError.unauthorized("Refresh token inválido o ya expirado.");
+        throw CustomError.unauthorized(
+          "Token de refresco inválido o ya expirado."
+        );
       }
 
       // Eliminar el refresh token
       await this.tokenRepository.removeRefreshToken(existingToken!);
-
-      console.log("Usuario cerró sesión correctamente: ", userId);
 
       return {
         success: true,
@@ -37,10 +38,7 @@ export class LogoutUser {
       };
     } catch (error: any) {
       console.error("Error al cerrar sesión: ", error);
-      return {
-        success: false,
-        message: error.message || "Error al cerrar sesión.",
-      };
+      throw error; // Re-lanzar el error para ser manejado por el middleware
     }
   }
 }

@@ -1,6 +1,7 @@
 // src/domain/repositories/AuthRepository.ts
 
 import {
+  FindByProviderIdDTO,
   GetActiveUserByEmailDTO,
   GetActiveUserDTO,
   LoginUserDTO,
@@ -22,9 +23,12 @@ export abstract class AuthRepository {
   ): Promise<AuthEntity>;
   abstract getActiveUserByEmail(
     getActiveUserByEmailDTO: GetActiveUserByEmailDTO
-  ): Promise<AuthEntity>;
+  ): Promise<AuthEntity | null>;
   abstract updatePassword(
     updatePasswordDTO: UpdatePasswordDTO
   ): Promise<AuthEntity>;
   abstract getAll(): Promise<AuthEntity[]>;
+  abstract findByProviderId(
+    dto: FindByProviderIdDTO
+  ): Promise<AuthEntity | null>;
 }

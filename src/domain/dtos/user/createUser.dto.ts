@@ -5,15 +5,13 @@ import { CountryCode, UserRole } from "../../enums";
 
 export class CreateUserDTO {
   id!: string; // UUID generado externamente
-  email!: string;
-  password!: string;
   displayName!: string;
-  photoURL!: string;
-  phoneNumber!: string;
+  photoURL?: string;
+  phoneNumber?: string;
   isSeller!: boolean;
-  promptsPublished!: string[];
-  paymentMethods!: string[];
-  promptsBought!: string[];
+  promptsPublished?: string[];
+  paymentMethods?: string[];
+  promptsBought?: string[];
   role!: UserRole;
   createdAt!: Date;
   updatedAt!: Date;
@@ -54,27 +52,17 @@ export class CreateUserDTO {
       errors.push("ID es requerido y debe ser un UUID válido.");
     }
 
-    if (!Validators.isValidEmail(dto.email)) {
-      errors.push("Email es requerido y debe ser válido.");
-    }
-
-    if (!Validators.isValidPassword(dto.password)) {
-      errors.push(
-        "Contraseña es requerida y debe cumplir con los criterios de seguridad."
-      );
-    }
-
     if (!Validators.isValidString(dto.displayName)) {
       errors.push(
         "Nombre para mostrar es requerido y debe ser una cadena válida."
       );
     }
 
-    if (!Validators.isValidString(dto.photoURL)) {
+    if (dto.photoURL !== "" && !Validators.isValidURL(dto.photoURL)) {
       errors.push("photoURL es requerido y debe ser una URL válida.");
     }
 
-    if (!Validators.isValidString(dto.phoneNumber)) {
+    if (dto.phoneNumber !== "" && !Validators.isValidString(dto.phoneNumber)) {
       errors.push("Número de teléfono es requerido y debe ser válido.");
     }
 

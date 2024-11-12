@@ -2,7 +2,7 @@
 
 import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
-import { authenticateJWT } from "../middlewares/authMiddleware";
+import { authenticate } from "../middlewares/authMiddleware";
 import { UserDataSource } from "../datasources";
 import { UserRepository } from "../repositories";
 import {
@@ -47,17 +47,14 @@ export class UserRoutes {
   private initializeRoutes(): void {
     this.router.put(
       "/:id",
-      authenticateJWT,
       asyncHandler(this.controller.updateProfile.bind(this.controller))
     );
     this.router.delete(
       "/:id",
-      authenticateJWT,
       asyncHandler(this.controller.deleteProfile.bind(this.controller))
     );
     this.router.get(
       "/:id",
-      authenticateJWT,
       asyncHandler(this.controller.getProfile.bind(this.controller))
     );
   }

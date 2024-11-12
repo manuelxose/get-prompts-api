@@ -2,30 +2,40 @@
 
 import { BcryptAdapter } from "../../core/adapters";
 import {
-  LoginUserDTO,
-  RegisterUserDTO,
-  LogoutUserDTO,
+  FindByProviderIdDTO,
   GetActiveUserDTO,
+  LoginUserDTO,
+  LogoutUserDTO,
+  RegisterUserDTO,
 } from "../../domain/dtos/auth";
 import { AuthEntity } from "../../domain/entities/auth";
 import { CustomError } from "../../domain/errors";
 import { AuthDataSource } from "../../domain/datasources";
 import { AuthModel } from "../../data/mongodb/models";
 import { AuthMapper } from "../mappers/auth.mapper";
+import { AuthMethod } from "../../domain/enums";
+import { FindUserByEmailDTO } from "../../domain/dtos/user";
 
 class MongoAuthDataSource implements AuthDataSource {
   private bcrypt = new BcryptAdapter();
 
-  // Login a user using their credentials
+  /**
+   * Inicia sesión de un usuario utilizando sus credenciales.
+   * @param loginUserDTO - DTO que contiene las credenciales del usuario.
+   * @returns Promise<AuthEntity> - Entidad de autenticación del usuario.
+   * @throws CustomError si el usuario no es encontrado o la contraseña es incorrecta.
+   */
   async login(loginUserDTO: LoginUserDTO): Promise<AuthEntity> {
     const auth = await AuthModel.findOne({ email: loginUserDTO.email });
 
     if (!auth) {
-      throw CustomError.badRequest("User not found");
+      throw CustomError.badRequest("Usuario no encontrado");
     }
 
     if (!auth.password) {
-      throw CustomError.badRequest("Password not set for this user");
+      throw CustomError.badRequest(
+        "Contraseña no establecida para este usuario"
+      );
     }
 
     const isPasswordValid = await this.bcrypt.compare(
@@ -34,38 +44,38 @@ class MongoAuthDataSource implements AuthDataSource {
     );
 
     if (!isPasswordValid) {
-      throw CustomError.badRequest("Invalid credentials: Incorrect password");
+      throw CustomError.badRequest(
+        "Credenciales inválidas: Contraseña incorrecta"
+      );
     }
-
-    console.log("Returning mapped auth entity", auth);
-
-    const authMapped = AuthMapper.toEntity(auth);
-    return authMapped;
+    return AuthMapper.toEntity(auth);
   }
 
-  // Register a new user in the system
+  /**
+   * Registra un nuevo usuario en el sistema.
+   * @param registerUserDTO - DTO que contiene los detalles de registro del usuario.
+   * @returns Promise<AuthEntity> - Entidad de autenticación del usuario registrado.
+   * @throws CustomError si el usuario ya existe.
+   */
   async register(registerUserDTO: RegisterUserDTO): Promise<AuthEntity> {
     const existingAuth = await AuthModel.findOne({
       email: registerUserDTO.email,
     });
 
     if (existingAuth) {
-      throw CustomError.badRequest("User already exists");
+      throw CustomError.badRequest("El usuario ya existe");
     }
-
-    console.log("User to register: ", registerUserDTO);
+    console.log("registerUserDTO: ", registerUserDTO);
 
     const newAuth = new AuthModel({
-      id: registerUserDTO.id,
-      userId: registerUserDTO.id, // Asumiendo que el ID del usuario es el mismo que el ID de auth
-      method: registerUserDTO.method,
+      _id: registerUserDTO.id,
+      userId: registerUserDTO.userId, // Asumiendo que el ID del usuario es el mismo que el ID de auth
+      method: registerUserDTO.method || AuthMethod.EMAIL,
       emailVerified: registerUserDTO.emailVerified || false,
-      createdAt: registerUserDTO.createdAt,
-      updatedAt: registerUserDTO.updatedAt,
       password: registerUserDTO.password,
-      providerId: registerUserDTO.providerId,
       email: registerUserDTO.email,
-      refreshTokens: [], // Inicializar con refresh tokens vacíos
+      createdAt: new Date(),
+      updatedAt: new Date(),
     });
 
     await newAuth.save();
@@ -73,184 +83,55 @@ class MongoAuthDataSource implements AuthDataSource {
     return AuthMapper.toEntity(newAuth);
   }
 
-  // Logout a user
+  /**
+   * Busca un registro de autenticación por email.
+   * @param email - Email del usuario.
+   * @returns Promise<AuthEntity | null> - Entidad de autenticación si existe.
+   */
+  async findByEmail(dto: FindUserByEmailDTO): Promise<AuthEntity | null> {
+    const { email } = dto;
+    const auth = await AuthModel.findOne({ email });
+
+    return auth ? AuthMapper.toEntity(auth) : null;
+  }
+
+  /**
+   * Busca un registro de autenticación por ID de usuario.
+   * @param userId - ID del usuario.
+   * @returns Promise<AuthEntity | null> - Entidad de autenticación si existe.
+   */
+  async findById(userId: GetActiveUserDTO): Promise<AuthEntity | null> {
+    const auth = await AuthModel.findOne({ userId });
+    return auth ? AuthMapper.toEntity(auth) : null;
+  }
+
+  /**
+   * Logout de un usuario.
+   * @param logoutUserDTO - DTO que contiene los detalles de cierre de sesión.
+   * @returns Promise<void>
+   * @throws CustomError si el registro de autenticación no es encontrado o el token de refresco no existe.
+   */
   async logout(logoutUserDTO: LogoutUserDTO): Promise<void> {
     const { userId, refreshToken } = logoutUserDTO;
-
     const auth = await AuthModel.findOne({ userId });
-
     if (!auth) {
-      throw CustomError.notFound("Auth record not found for user");
+      throw CustomError.notFound(
+        "Registro de autenticación no encontrado para el usuario"
+      );
     }
-
-    // Eliminar el refresh token
-    const tokenIndex = auth.refreshTokens.findIndex(
-      (token) => token.token === refreshToken
-    );
-
-    if (tokenIndex === -1) {
-      throw CustomError.badRequest("Refresh token not found");
-    }
-
-    auth.refreshTokens.splice(tokenIndex, 1);
-    await auth.save();
   }
 
-  // Reset password
-  // async resetPassword(resetPasswordDTO: ResetPasswordDTO): Promise<void> {
-  //   const { email, newPassword } = resetPasswordDTO;
+  /**
+   * Busca un registro de autenticación por providerId y método.
+   * @param dto - DTO que contiene providerId y método de autenticación.
+   * @returns Promise<AuthEntity | null> - Entidad de autenticación si existe.
+   */
+  async findByProviderId(dto: FindByProviderIdDTO): Promise<AuthEntity | null> {
+    const { providerId, method } = dto;
+    const auth = await AuthModel.findOne({ providerId, method });
 
-  //   const auth = await AuthModel.findOne({ email });
-
-  //   if (!auth) {
-  //     throw CustomError.notFound("User not found");
-  //   }
-
-  //   const hashedPassword = await this.bcrypt.hash(newPassword);
-  //   auth.password = hashedPassword;
-  //   auth.updatedAt = new Date();
-
-  //   await auth.save();
-  // }
-
-  // Update password
-  // async updatePassword(
-  //   updatePasswordDTO: UpdatePasswordDTO
-  // ): Promise<AuthEntity> {
-  //   const { userId, oldPassword, newPassword } = updatePasswordDTO;
-
-  //   const auth = await AuthModel.findOne({ userId });
-
-  //   if (!auth || !auth.password) {
-  //     throw CustomError.badRequest("User not found or password not set");
-  //   }
-
-  //   const isPasswordValid = await this.bcrypt.compare(
-  //     oldPassword,
-  //     auth.password
-  //   );
-
-  //   if (!isPasswordValid) {
-  //     throw CustomError.badRequest("Old password is incorrect");
-  //   }
-
-  //   const hashedNewPassword = await this.bcrypt.hash(newPassword);
-  //   auth.password = hashedNewPassword;
-  //   auth.updatedAt = new Date();
-
-  //   await auth.save();
-
-  //   return AuthMapper.toEntity(auth);
-  // }
-
-  // Update profile
-  // async updateProfile(updateProfileDTO: UpdateProfileDTO): Promise<AuthEntity> {
-  //   const { userId, email, displayName, photoURL, phoneNumber } =
-  //     updateProfileDTO;
-
-  //   const auth = await AuthModel.findOne({ userId });
-
-  //   if (!auth) {
-  //     throw CustomError.notFound("Auth record not found for user");
-  //   }
-
-  //   if (email) {
-  //     // Verificar si el nuevo email ya está en uso
-  //     const existingAuth = await AuthModel.findOne({ email });
-  //     if (existingAuth && existingAuth.userId !== userId) {
-  //       throw CustomError.badRequest("Email already in use by another user");
-  //     }
-  //     auth.email = email;
-  //     auth.emailVerified = false; // Reiniciar la verificación de email
-  //   }
-
-  //   // **Nota:** Los campos como displayName, photoURL y phoneNumber pertenecen a UserEntity.
-  //   // Debes actualizarlos a través del UserDataSource correspondiente.
-
-  //   auth.updatedAt = new Date();
-
-  //   await auth.save();
-
-  //   return AuthMapper.toEntity(auth);
-  // }
-
-  // Obtener usuario activo por ID
-  // async getActiveUser(getActiveUserDTO: GetActiveUserDTO): Promise<AuthEntity> {
-  //   const auth = await AuthModel.findOne({ userId: getActiveUserDTO.userId });
-
-  //   if (!auth) {
-  //     throw CustomError.notFound("Active user not found");
-  //   }
-
-  //   return AuthMapper.toEntity(auth);
-  // }
-
-  // Obtener usuario activo por email
-  // async getActiveUserByEmail(
-  //   getActiveUserByEmailDTO: GetActiveUserByEmailDTO
-  // ): Promise<AuthEntity> {
-  //   const auth = await AuthModel.findOne({
-  //     email: getActiveUserByEmailDTO.email,
-  //   });
-
-  //   if (!auth) {
-  //     throw CustomError.notFound("Active user not found");
-  //   }
-
-  //   return AuthMapper.toEntity(auth);
-  // }
-
-  // Obtener usuario por ID (AuthEntity)
-  async findById(getUserByIdDTO: GetActiveUserDTO): Promise<AuthEntity> {
-    const auth = await AuthModel.findOne({ userId: getUserByIdDTO.id });
-
-    if (!auth) {
-      throw CustomError.notFound("Auth record not found");
-    }
-
-    return AuthMapper.toEntity(auth);
+    return auth ? AuthMapper.toEntity(auth) : null;
   }
-
-  // Obtener todos los registros de autenticación
-  // async getAll(): Promise<AuthEntity[]> {
-  //   logger.info("getAll: Start retrieving all auth records");
-
-  //   try {
-  //     logger.info("getAll: Initiating database query for auth records");
-
-  //     const auths = await AuthModel.find();
-
-  //     if (!auths) {
-  //       logger.warn("getAll: No auth records found in database");
-  //       throw CustomError.notFound("No auth records found");
-  //     }
-
-  //     if (auths.length === 0) {
-  //       logger.warn("getAll: Auth records array is empty");
-  //       throw CustomError.notFound("No auth records found");
-  //     }
-
-  //     logger.info(`getAll: ${auths.length} auth records found`);
-
-  //     const authEntities = auths.map((auth) => {
-  //       logger.debug(`getAll: Mapping auth ID ${auth.id}`);
-  //       return AuthMapper.toEntity(auth);
-  //     });
-
-  //     logger.info("getAll: Successfully retrieved and mapped auth records");
-
-  //     return authEntities;
-  //   } catch (error: unknown) {
-  //     if (error instanceof CustomError) {
-  //       logger.error(`getAll: Error encountered - ${error.message}`);
-  //       throw error;
-  //     } else {
-  //       throw CustomError.internal(
-  //         "An error occurred while retrieving auth records"
-  //       );
-  //     }
-  //   }
-  // }
 }
 
 export { MongoAuthDataSource as AuthDataSource };

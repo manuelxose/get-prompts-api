@@ -1,6 +1,8 @@
 // src/application/use-cases/auth/GenerateToken.ts
 
 import { JwtAdapter } from "../../../core/adapters/jwt.adapter";
+import { GetActiveUserDTO } from "../../../domain/dtos/auth";
+import { GenerateTokenDTO } from "../../../domain/dtos/token";
 import { CustomError } from "../../../domain/errors";
 import { AuthRepository } from "../../../domain/repositories";
 import { GenerateTokenResponse } from "../../interfaces/auth/GenerateTokenResponse";
@@ -17,8 +19,12 @@ export class GenerateToken {
     try {
       console.log("Generación de token para usuario: ", generateTokenDTO);
 
+      const [error, getActiveUserDTO] = GetActiveUserDTO.create({
+        id: generateTokenDTO.userId,
+      });
+
       // Verificar si el usuario existe
-      const user = await this.authRepository.getById(generateTokenDTO.userId);
+      const user = await this.authRepository.getActiveUser(getActiveUserDTO!);
       if (!user) {
         throw CustomError.notFound(
           `Usuario con ID ${generateTokenDTO.userId} no encontrado.`

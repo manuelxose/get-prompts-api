@@ -7,3 +7,7 @@ export * from "./GetActiveUserDTO";
 export * from "./GetActiveUserByEmailDTO";
 export * from "./updatePasswordDTO";
 export * from "./resetPaswordDTO";
+export * from "./FindByProviderDTO";
+export * from "./AplleAuthCodeDTO";
+export * from "./GoogleAuthCodeDTO";
+export * from "./RedirectToGoogleDTO";

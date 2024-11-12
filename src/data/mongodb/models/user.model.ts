@@ -36,9 +36,9 @@ export interface IUser extends Document {
 const UserSchema = new Schema<IUser>(
   {
     id: { type: String, required: true, unique: true },
-    displayName: { type: String, required: true },
-    photoURL: { type: String, required: true },
-    phoneNumber: { type: String, required: true },
+    displayName: { type: String, required: false },
+    photoURL: { type: String, required: false, default: "" },
+    phoneNumber: { type: String, required: false },
     isSeller: { type: Boolean, required: true },
     promptsPublished: { type: [String], default: [] },
     paymentMethods: { type: [String], default: [] },

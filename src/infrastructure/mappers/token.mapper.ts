@@ -1,7 +1,7 @@
 // src/infrastructure/mappers/token.mapper.ts
 
+import { IRefreshToken } from "../../data/mongodb/models/token.model";
 import { RefreshTokenDTO } from "../../domain/dtos/token/RefreshTokenDTO";
-import { IRefreshToken } from "../../data/mongodb/models";
 
 export class TokenMapper {
   /**
@@ -13,6 +13,7 @@ export class TokenMapper {
     return new RefreshTokenDTO(
       tokenDoc.id as string,
       tokenDoc.token,
+      tokenDoc.type,
       tokenDoc.expiresAt
     );
   }
@@ -24,8 +25,9 @@ export class TokenMapper {
    */
   static toDocument(dto: RefreshTokenDTO): Partial<IRefreshToken> {
     return {
-      id: dto.userId,
+      userId: dto.userId,
       token: dto.token,
+      type: dto.type,
       expiresAt: dto.expiresAt,
     };
   }

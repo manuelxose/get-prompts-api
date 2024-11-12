@@ -1,67 +1,76 @@
 // src/application/use-cases/auth/RefreshTokenUseCase.ts
 
+import { JwtAdapter } from "../../../core/adapters/jwt.adapter";
 import { RefreshTokenDTO } from "../../../domain/dtos/token";
 import { CustomError } from "../../../domain/errors";
 import { TokenRepository } from "../../../domain/repositories";
+import { RefreshTokenResponse } from "../../interfaces/auth/RefreshTokenResponse";
 
 export class RefreshTokenUseCase {
-  constructor(private tokenRepository: TokenRepository) {}
+  private jwtAdapter: JwtAdapter;
 
-  /**
-   * Añadir un nuevo token de refresco.
-   * @param userId ID del usuario.
-   * @param token Token de refresco.
-   * @param expiresAt Fecha de expiración.
-   */
-  async executeAdd(
-    userId: string,
-    token: string,
-    expiresAt: Date
-  ): Promise<void> {
-    const [error, refreshTokenDTO] = RefreshTokenDTO.create({
-      userId,
-      token,
-      expiresAt,
-    });
-    if (error || !refreshTokenDTO) {
-      throw CustomError.badRequest(
-        error || "Datos de token de refresco inválidos."
-      );
-    }
-
-    await this.tokenRepository.addRefreshToken(refreshTokenDTO);
+  constructor(private tokenRepository: TokenRepository) {
+    this.jwtAdapter = new JwtAdapter(process.env.JWT_SECRET || "secret");
   }
 
   /**
-   * Remover un token de refresco existente.
-   * @param userId ID del usuario.
-   * @param token Token de refresco a remover.
+   * Refresca el token de acceso utilizando el token de refresco.
+   * @param refreshTokenStr - Token de refresco proporcionado por el cliente.
+   * @returns Promise<RefreshTokenResponse> - Nuevo token de acceso y de refresco.
+   * @throws CustomError si el token de refresco es inválido o expirado.
    */
-  async executeRemove(userId: string, token: string): Promise<void> {
-    const [error, refreshTokenDTO] = RefreshTokenDTO.create({
-      userId,
-      token,
-      expiresAt: new Date(),
-    }); // expiresAt no es relevante para la eliminación
-    if (error || !refreshTokenDTO) {
-      throw CustomError.badRequest(
-        error || "Datos de token de refresco inválidos."
+  async execute(refreshTokenStr: string): Promise<RefreshTokenResponse> {
+    try {
+      // Verificar y decodificar el token de refresco
+      const payload = this.jwtAdapter.verifyRefreshToken(refreshTokenStr);
+
+      const userId = payload.userId;
+
+      // Validar el refresh token en la base de datos
+      const existingToken = await this.tokenRepository.findRefreshToken(
+        userId,
+        refreshTokenStr
       );
+      if (!existingToken) {
+        throw CustomError.unauthorized(
+          "Token de refresco inválido o ya expirado."
+        );
+      }
+
+      // Rotar tokens
+      // Eliminar el token de refresco usado
+      await this.tokenRepository.removeRefreshToken(existingToken);
+
+      // Generar nuevos tokens
+      const accessToken = this.jwtAdapter.generateAccessToken(userId);
+      const newRefreshTokenStr = this.jwtAdapter.generateRefreshToken(userId);
+
+      // Almacenar el nuevo refresh token
+      const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
+
+      // Desestructurar la tupla
+      const [error, newRefreshTokenDTO] = RefreshTokenDTO.create({
+        token: newRefreshTokenStr,
+        userId,
+        expiresAt,
+        createdAt: new Date(),
+      });
+
+      if (error) {
+        throw CustomError.badRequest(error);
+      }
+
+      // Ahora puedes pasar newRefreshTokenDTO al método que espera un RefreshTokenDTO
+      await this.tokenRepository.addRefreshToken(newRefreshTokenDTO!);
+
+      return {
+        success: true,
+        accessToken,
+        refreshToken: newRefreshTokenStr,
+      };
+    } catch (error: any) {
+      console.error("Error al refrescar token: ", error);
+      throw error; // Re-lanzar el error para ser manejado por el middleware
     }
-
-    await this.tokenRepository.removeRefreshToken(refreshTokenDTO);
-  }
-
-  /**
-   * Verificar la existencia de un token de refresco.
-   * @param userId ID del usuario.
-   * @param token Token de refresco a verificar.
-   * @returns El DTO del token si existe, o null.
-   */
-  async executeFind(
-    userId: string,
-    token: string
-  ): Promise<RefreshTokenDTO | null> {
-    return this.tokenRepository.findRefreshToken(userId, token);
   }
 }

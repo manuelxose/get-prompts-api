@@ -1,21 +1,25 @@
 // src/domain/dtos/token/RefreshTokenDTO.ts
 
 import { Validators } from "../../../shared/validators";
+import { TokenType } from "../../enums";
 
 export class RefreshTokenDTO {
   userId: string;
   token: string;
+  type: TokenType;
   expiresAt: Date;
   createdAt?: Date;
 
   constructor(
     userId: string,
     token: string,
+    type: TokenType,
     expiresAt: Date,
     createdAt?: Date
   ) {
     this.userId = userId;
     this.token = token;
+    this.type = type || TokenType.REFRESH;
     this.expiresAt = expiresAt;
     this.createdAt = createdAt;
   }
@@ -28,7 +32,12 @@ export class RefreshTokenDTO {
   static create(
     data: Partial<RefreshTokenDTO>
   ): [string | null, RefreshTokenDTO | null] {
-    const dto = new RefreshTokenDTO(data.userId!, data.token!, data.expiresAt!);
+    const dto = new RefreshTokenDTO(
+      data.userId!,
+      data.token!,
+      data.type!,
+      data.expiresAt!
+    );
     const errors: string[] = [];
 
     // Validaciones

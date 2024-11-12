@@ -17,12 +17,6 @@ import { UserMapper } from "../mappers/user.mapper";
 class MongoUserDataSource implements UserDataSource {
   // Crear un nuevo usuario
   async create(registerUserDTO: CreateUserDTO): Promise<UserEntity> {
-    const existingUser = await UserModel.findOne({
-      email: registerUserDTO.email,
-    });
-
-    if (existingUser) throw CustomError.badRequest("User already exists");
-
     const newUser = new UserModel({
       id: registerUserDTO.id,
       displayName: registerUserDTO.displayName,

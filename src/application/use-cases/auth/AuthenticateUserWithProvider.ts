@@ -1,20 +1,32 @@
+// src/application/use-cases/auth/AuthenticateUserWithProvider.ts
+
 import { JwtAdapter } from "../../../core/adapters/jwt.adapter";
-import { AuthenticateUserWithProviderDTO } from "../../../domain/dtos/auth/AutthenticatedUserWithProviderDTO";
 import {
   AuthRepository,
   TokenRepository,
   UserRepository,
 } from "../../../domain/repositories";
-import { AuthenticateUserResponse } from "../../interfaces/auth";
+import { AuthenticateUserResponse } from "../../interfaces/auth/AuthenticateUserResponse";
+import { RefreshTokenDTO } from "../../../domain/dtos/token/RefreshTokenDTO";
 import { uuid } from "../../../core/adapters";
-import { RefreshTokenDTO } from "../../../domain/dtos/token";
+
+import { UserRole } from "../../../domain/enums";
+import { CustomError } from "../../../domain/errors";
+import { AuthenticateUserWithProviderDTO } from "../../../domain/dtos/auth/AutthenticatedUserWithProviderDTO";
+import { UserEntity } from "../../../domain/entities/user";
+import { AuthEntity } from "../../../domain/entities/auth";
+import {
+  FindByProviderIdDTO,
+  RegisterUserDTO,
+} from "../../../domain/dtos/auth";
 
 export class AuthenticateUserWithProvider {
   constructor(
     private authRepository: AuthRepository,
     private userRepository: UserRepository,
     private jwtAdapter: JwtAdapter,
-    private tokenRepository: TokenRepository
+    private tokenRepository: TokenRepository,
+    private uuidAdapter = uuid
   ) {}
 
   async execute(
@@ -26,62 +38,73 @@ export class AuthenticateUserWithProvider {
       const { method, providerId, email, displayName, photoURL, phoneNumber } =
         authenticateDTO;
 
+      //Crear el DTO para buscar el usuario
+
+      const [Ferror, findDTO] = FindByProviderIdDTO.create({
+        providerId,
+        method,
+      });
+      if (Ferror) {
+        throw new Error(Ferror);
+      }
+
       // Buscar AuthEntity por método y providerId
-      let auth = await this.authRepository.login({
-        email,
-        // Otros campos necesarios para el login via proveedor
-      } as any); // Ajusta según tu DTO
+      let auth = await this.authRepository.findByProviderId(findDTO!);
 
       if (!auth) {
-        // Si no existe, crear un nuevo usuario y AuthEntity
-        const userId = uuid.generate();
+        // Crear un nuevo usuario
+        const userId = this.uuidAdapter.generate();
 
-        const registerUserDTO = {
+        const newUser = new UserEntity({
           id: userId,
-          email,
-          displayName,
-          photoURL,
-          phoneNumber,
+          displayName: displayName || "Usuario",
+          photoURL: photoURL || "",
+          phoneNumber: phoneNumber || "",
           isSeller: false,
-          promptsPublished: [],
-          paymentMethods: [],
-          promptsBought: [],
-          role: "user",
-          nickName: undefined,
-          stripeId: undefined,
-        };
+          role: UserRole.USER,
+          createdAt: new Date(),
+          updatedAt: new Date(),
+        });
 
-        await this.userRepository.create(registerUserDTO as any); // Casting necesario
+        // Guardar el usuario
+        await this.userRepository.create(newUser);
 
-        const newAuth = {
-          id: uuid.generate(),
+        // Crear nuevo AuthEntity
+        auth = new AuthEntity({
+          id: this.uuidAdapter.generate(),
           userId,
           method,
           emailVerified: true, // Suponiendo que el proveedor verifica el email
           createdAt: new Date(),
           updatedAt: new Date(),
-          password: undefined, // No se requiere contraseña para proveedores
           providerId,
           email,
-        };
-
-        await this.authRepository.register(newAuth as any); // Casting necesario
-
-        auth = newAuth as any;
+        });
+        const [authError, newAuth] = RegisterUserDTO.create(auth);
+        if (authError) {
+          throw CustomError.badRequest(authError);
+        }
+        // Guardar el registro de autenticación
+        await this.authRepository.register(newAuth!);
       }
 
       // Generar tokens
-      const accessToken = this.jwtAdapter.generateAccessToken(auth.userId);
-      const refreshTokenStr = this.jwtAdapter.generateRefreshToken();
+      const accessToken = this.jwtAdapter.generateAccessToken(auth.id);
+      const refreshTokenStr = this.jwtAdapter.generateRefreshToken(auth.id);
 
       // Almacenar RefreshToken
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
       const [error, refreshToken] = RefreshTokenDTO.create({
         token: refreshTokenStr,
-        userId: auth.id,
+        userId: auth.userId,
         expiresAt,
         createdAt: new Date(),
       });
+
+      if (error) {
+        throw CustomError.internal(error);
+      }
+
       await this.tokenRepository.addRefreshToken(refreshToken!);
 
       console.log("Usuario autenticado correctamente: ", auth.userId);
@@ -94,10 +117,7 @@ export class AuthenticateUserWithProvider {
       };
     } catch (error: any) {
       console.error("Error al autenticar usuario con proveedor: ", error);
-      return {
-        success: false,
-        message: error.message || "Error al autenticar usuario con proveedor.",
-      };
+      throw error;
     }
   }
 }

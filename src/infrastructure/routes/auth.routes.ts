@@ -12,8 +12,12 @@ import {
   TokenRepository,
 } from "../repositories";
 import {
+  AuthenticateWithApple,
+  AuthenticateWithGoogle,
   LoginUser,
   LogoutUser,
+  RedirectToApple,
+  RedirectToGoogle,
   RegisterUser,
 } from "../../application/use-cases/auth";
 import { UserAuthController } from "../controllers";
@@ -39,21 +43,56 @@ export class UserAuthRoutes {
     const tokenRepositoy = new TokenRepository(tokenDataSource);
 
     // Casos de uso
-    const registerUseCase = new LogoutUser(authRepository, tokenRepositoy);
+    const logoutUseCase = new LogoutUser(tokenRepositoy);
     const loginUseCase = new LoginUser(
       authRepository,
       userRepository,
       tokenRepositoy
     );
-    const logoutUseCase = new RegisterUser(authRepository, userRepository);
+    const registerUseCase = new RegisterUser(authRepository, userRepository);
+    const redirectToGoogleUseCase = new RedirectToGoogle();
+    const authenticateWithGoogleUseCase = new AuthenticateWithGoogle(
+      authRepository,
+      userRepository,
+      tokenRepositoy
+    );
 
-    return new UserAuthController(logoutUseCase, loginUseCase, registerUseCase);
+    const redirectToAppleUseCase = new RedirectToApple();
+    const authenticateWithAppleUseCase = new AuthenticateWithApple(
+      authRepository,
+      userRepository,
+      tokenRepositoy
+    );
+
+    return new UserAuthController(
+      registerUseCase,
+      loginUseCase,
+      logoutUseCase,
+      redirectToGoogleUseCase,
+      authenticateWithGoogleUseCase,
+      redirectToAppleUseCase,
+      authenticateWithAppleUseCase
+    );
   }
 
   private initializeRoutes(): void {
     this.router.post("/register", asyncHandler(this.controller.register));
     this.router.post("/login", asyncHandler(this.controller.login));
     this.router.post("/logout", asyncHandler(this.controller.logout));
+
+    // Rutas para Google
+    this.router.get("/google", asyncHandler(this.controller.googleAuth));
+    this.router.get(
+      "/google/callback",
+      asyncHandler(this.controller.googleCallback)
+    );
+
+    // Rutas para Apple
+    this.router.get("/apple", asyncHandler(this.controller.appleAuth));
+    this.router.post(
+      "/apple/callback",
+      asyncHandler(this.controller.appleCallback)
+    );
   }
 }
 

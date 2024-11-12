@@ -55,34 +55,35 @@ export class UpdateUserDTO {
   }
 
   static createFromDTO(dto: UpdateUserDTO): UserEntity {
-    return new UserEntity(
-      dto.id,
-      dto.displayName || "",
-      dto.photoURL || "",
-      dto.phoneNumber || "",
-      dto.isSeller || false,
-      [], // promptsPublished (inicializado vacío)
-      [], // paymentMethods (inicializado vacío)
-      [], // promptsBought (inicializado vacío)
-      dto.role || UserRole.USER, // Rol predeterminado
-      new Date(), // createdAt
-      new Date(), // updatedAt
-      dto.nickName || "",
-      "", // stripeId predeterminado a vacío
-      [], // promptsLiked inicializado vacío
-      0, // views predeterminado a 0
-      [], // followers inicializado vacío
-      0, // rank predeterminado a 0
-      dto.bio || "", // bio
-      dto.instagram || "", // instagram
-      dto.twitter || "", // twitter
-      dto.youtube || "", // youtube
-      dto.website || "", // website
-      dto.bannerURL || "", // bannerURL
-      [], // following inicializado vacío
-      dto.allowMessages ?? true, // allowMessages predeterminado a true
-      dto.acceptCustomJobs ?? false, // acceptCustomJobs predeterminado a false
-      dto.countryCode // countryCode
-    );
+    // Usamos un objeto de configuración para crear la instancia de UserEntity
+    return UserEntity.create({
+      id: dto.id,
+      displayName: dto.displayName,
+      photoURL: dto.photoURL,
+      phoneNumber: dto.phoneNumber,
+      isSeller: dto.isSeller,
+      nickName: dto.nickName,
+      bio: dto.bio,
+      instagram: dto.instagram,
+      twitter: dto.twitter,
+      youtube: dto.youtube,
+      website: dto.website,
+      bannerURL: dto.bannerURL,
+      allowMessages: dto.allowMessages ?? true,
+      acceptCustomJobs: dto.acceptCustomJobs ?? false,
+      role: dto.role || UserRole.USER,
+      countryCode: dto.countryCode,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      promptsPublished: [], // Inicializamos con valores predeterminados
+      paymentMethods: [],
+      promptsBought: [],
+      promptsLiked: [],
+      views: 0,
+      followers: [],
+      rank: 0,
+      following: [],
+      stripeId: "", // Valor predeterminado para stripeId
+    });
   }
 }

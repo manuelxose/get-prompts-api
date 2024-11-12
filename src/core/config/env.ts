@@ -47,6 +47,11 @@ export const env = {
   ),
   port: getEnvVarNumberOptional("PORT", 3000),
   dbName: getEnvVarOptional("MONGO_DB_NAME", "default"),
+  jwtAccessSecret: getEnvVar("JWT_ACCESS_SECRET"),
+  jwtRefreshSecret: getEnvVar("JWT_REFRESH_SECRET"),
+  googleClientId: getEnvVar("GOOGLE_CLIENT_ID"),
+  googleClientSecret: getEnvVar("GOOGLE_CLIENT_SECRET"),
+  googleRedirectUri: getEnvVar("GOOGLE_REDIRECT_URI"),
 
   // Variables de entorno obligatorias para el correo electrónico
   //   emailUser: getEnvVar("IONOS_EMAIL_USER"),

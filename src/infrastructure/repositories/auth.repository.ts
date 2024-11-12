@@ -1,5 +1,4 @@
 import { AuthDataSource } from "../datasources";
-import { UserEntity as User } from "../../domain/entities/user/user.entity";
 import { AuthRepository } from "../../domain/repositories";
 import {
   LoginUserDTO,
@@ -9,6 +8,7 @@ import {
   UpdatePasswordDTO,
   GetActiveUserDTO,
   GetActiveUserByEmailDTO,
+  FindByProviderIdDTO,
 } from "../../domain/dtos/auth";
 import { AuthEntity } from "../../domain/entities/auth/auth.entity";
 
@@ -45,10 +45,11 @@ class ImplAuthRepository implements AuthRepository {
   }
   async getActiveUserByEmail(
     dto: GetActiveUserByEmailDTO
-  ): Promise<AuthEntity> {
-    // return this.authDataSource.getActiveUserByEmail(dto);
-    const response: AuthEntity = {} as AuthEntity;
-    return response;
+  ): Promise<AuthEntity | null> {
+    return this.authDataSource.findByEmail(dto);
+  }
+  async findByProviderId(dto: FindByProviderIdDTO): Promise<AuthEntity | null> {
+    return this.authDataSource.findByProviderId(dto);
   }
 }
 

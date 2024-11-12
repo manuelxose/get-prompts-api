@@ -4,10 +4,15 @@ import { BcryptAdapter } from "../../../core/adapters";
 import { CustomError } from "../../../domain/errors";
 import { AuthRepository, UserRepository } from "../../../domain/repositories";
 import { RegisterUserResponse } from "../../interfaces/user/RegisterUserResponse";
-import { RegisterUserDTO } from "../../../domain/dtos/auth";
+import {
+  GetActiveUserByEmailDTO,
+  RegisterUserDTO,
+} from "../../../domain/dtos/auth";
 import { CreateUserDTO } from "../../../domain/dtos/user";
 import { uuid } from "../../../core/adapters";
 import { AuthEntity } from "../../../domain/entities/auth";
+import { UserEntity } from "../../../domain/entities/user";
+import { AuthMethod } from "../../../domain/enums";
 
 export class RegisterUser {
   private bcryptAdapter: BcryptAdapter = new BcryptAdapter();
@@ -23,13 +28,21 @@ export class RegisterUser {
     try {
       console.log("Registro de usuario: ", registerUserDTO);
 
-      // Verificar si el email ya está registrado en UserRepository
-      const existingUser = await this.userRepository.findByEmail(
-        registerUserDTO
-      );
-      if (existingUser) {
-        throw CustomError.badRequest("El email ya está registrado.");
+      const [erro, activeDTO] = GetActiveUserByEmailDTO.create({
+        email: registerUserDTO.email,
+      });
+
+      if (erro) {
+        throw erro;
       }
+      const existingUser = await this.authRepository.getActiveUserByEmail(
+        activeDTO!
+      );
+
+      if (existingUser) {
+        throw CustomError.badRequest("El usuario ya existe");
+      }
+      // Verificar si el email ya está registrado en UserRepository
 
       // Hashear la contraseña
       const hashedPassword = await this.bcryptAdapter.hash(
@@ -37,27 +50,32 @@ export class RegisterUser {
       );
 
       // Crear el nuevo usuario
-
-      const [error, userDTO] = CreateUserDTO.create(registerUserDTO);
-
-      if (error) {
-        throw CustomError.badRequest(error);
-      }
-
-      console.log("Creando nuevo usuario: ", userDTO);
-
-      const newUser = await this.userRepository.create(userDTO!);
+      const newUser = new UserEntity();
 
       if (!newUser) {
         throw CustomError.internal("Error al crear el nuevo usuario");
       }
 
+      //crear user dto
+
+      const [error, userDTO] = CreateUserDTO.create(newUser);
+
+      console.log("newUser: ", userDTO);
+
+      if (error) {
+        throw CustomError.badRequest(error);
+      }
+
+      const userResp = await this.userRepository.create(userDTO!);
+
+      console.log("userResp: ", userResp);
+
       // Crear el nuevo Auth
       const auth = new AuthEntity(
         uuid.generate(),
-        newUser.id,
-        registerUserDTO.method,
-        registerUserDTO.emailVerified,
+        userResp.id,
+        AuthMethod.EMAIL,
+        false,
         new Date(),
         new Date(),
         hashedPassword,
@@ -65,7 +83,9 @@ export class RegisterUser {
         registerUserDTO.email
       );
 
-      const [authError, newAuth] = RegisterUserDTO.create(registerUserDTO);
+      console.log(auth);
+
+      const [authError, newAuth] = RegisterUserDTO.create(auth);
 
       if (authError) {
         throw CustomError.badRequest(authError);
