@@ -5,6 +5,7 @@ import {
   DeletePromptDTO,
   GetPromptDTO,
   UpdatePromptDTO,
+  UploadToDbDTO,
 } from "../../domain/dtos/prompt";
 import { PromptEntity } from "../../domain/entities/prompt";
 import { PromptRepository } from "../../domain/repositories";
@@ -13,7 +14,7 @@ import { PromptDataSource } from "../datasources";
 class PromptMongoRepository implements PromptRepository {
   constructor(private readonly PromptDataSource: PromptDataSource) {}
 
-  async create(dto: CreatePromptDTO): Promise<PromptEntity> {
+  async create(dto: UploadToDbDTO): Promise<PromptEntity> {
     return this.PromptDataSource.createPrompt(dto);
   }
 
@@ -29,7 +30,7 @@ class PromptMongoRepository implements PromptRepository {
     return this.PromptDataSource.deletePrompt(dto);
   }
 
-  async getPrompts(): Promise<PromptEntity[]> {
+  async getPrompts(dto: any): Promise<any> {
     return this.PromptDataSource.getPrompts();
   }
 }

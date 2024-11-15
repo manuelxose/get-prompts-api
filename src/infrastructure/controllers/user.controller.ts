@@ -11,6 +11,7 @@ import {
   GetUserProfileById,
   UpdateUserProfile,
 } from "../../application/use-cases/user";
+import { RequestUserPayload } from "../middlewares/authMiddleware";
 
 export class UserController {
   constructor(
@@ -83,11 +84,13 @@ export class UserController {
   async getProfile(req: Request, res: Response, next: NextFunction) {
     try {
       // Verificar que req.user esté definido
+      console.log("UserController.getProfile");
       if (!req.user) {
         return res.status(401).json({ message: "User not authenticated" });
       }
+      const user = req.user as RequestUserPayload;
 
-      const [error, getDTO] = FindUserByIdDTO.create(req.params);
+      const [error, getDTO] = FindUserByIdDTO.create({ id: user.id });
 
       if (error) {
         return res.status(400).json({ message: error });

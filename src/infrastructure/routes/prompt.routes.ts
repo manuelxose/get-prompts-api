@@ -9,9 +9,11 @@ import {
   GetPromptUseCase,
   UpdatePromptUseCase,
   CreatePromptUseCase,
+  GetPromptByIdUseCase,
 } from "../../application/use-cases/prompt";
 import { asyncHandler } from "../../core/utils";
 import { PromptRepository } from "../repositories";
+import { CacheRepository, ImageRepository } from "../../domain/repositories";
 
 export class PromptRoutes {
   public router: Router;
@@ -19,11 +21,13 @@ export class PromptRoutes {
 
   private promptDataSource: PromptDataSource;
   private promptRepository!: PromptRepository;
+  private cacheRepository!: CacheRepository;
+  private imageRepository!: ImageRepository;
 
   // Casos de Uso
   private createPromptUseCase!: CreatePromptUseCase;
   private getPromptUseCase!: GetPromptUseCase;
-  private getPromptByIdUseCase!: GetPromptUseCase;
+  private getPromptByIdUseCase!: GetPromptByIdUseCase;
   private updatePromptUseCase!: UpdatePromptUseCase;
   private deletePromptUseCase!: DeletePromptUseCase;
 
@@ -37,9 +41,22 @@ export class PromptRoutes {
   private initializeController(): PromptController {
     this.promptRepository = new PromptRepository(this.promptDataSource);
 
-    this.createPromptUseCase = new CreatePromptUseCase(this.promptRepository);
-    this.getPromptUseCase = new GetPromptUseCase(this.promptRepository);
-    this.getPromptByIdUseCase = new GetPromptUseCase(this.promptRepository);
+    this.createPromptUseCase = new CreatePromptUseCase(
+      this.promptRepository,
+      this.imageRepository
+    );
+    this.getPromptUseCase = new GetPromptUseCase(
+      this.promptRepository,
+      this.cacheRepository
+    );
+    this.getPromptByIdUseCase = new GetPromptByIdUseCase(
+      this.promptRepository,
+      this.cacheRepository
+    );
+    this.getPromptByIdUseCase = new GetPromptByIdUseCase(
+      this.promptRepository,
+      this.cacheRepository
+    );
     this.updatePromptUseCase = new UpdatePromptUseCase(this.promptRepository);
     this.deletePromptUseCase = new DeletePromptUseCase(this.promptRepository);
 

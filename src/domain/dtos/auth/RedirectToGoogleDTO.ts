@@ -1,3 +1,5 @@
+import crypto from "crypto";
+
 export class RedirectToGoogleDTO {
   readonly state: string;
 
@@ -8,7 +10,10 @@ export class RedirectToGoogleDTO {
   static create(
     data: Partial<RedirectToGoogleDTO>
   ): [string | null, RedirectToGoogleDTO | null] {
-    const dto = new RedirectToGoogleDTO(data.state!);
+    // If state is not provided, generate a random state
+    const state = data.state || RedirectToGoogleDTO.generateRandomState();
+
+    const dto = new RedirectToGoogleDTO(state);
     const errors: string[] = [];
 
     if (!dto.state) {
@@ -22,5 +27,10 @@ export class RedirectToGoogleDTO {
     }
 
     return [null, dto];
+  }
+
+  // Utility to generate a random state string
+  private static generateRandomState(): string {
+    return crypto.randomBytes(16).toString("hex");
   }
 }

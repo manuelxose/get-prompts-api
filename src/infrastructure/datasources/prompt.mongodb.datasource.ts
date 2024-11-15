@@ -6,6 +6,7 @@ import {
   DeletePromptDTO,
   GetPromptDTO,
   UpdatePromptDTO,
+  UploadToDbDTO,
 } from "../../domain/dtos/prompt";
 import { PromptEntity } from "../../domain/entities/prompt";
 import { CustomError } from "../../domain/errors";
@@ -45,16 +46,16 @@ class PromptMongoDataSource implements PromptDataSource {
    * @returns PromptEntity.
    */
   async getPromptById(dto: GetPromptDTO): Promise<PromptEntity> {
-    logger.info(`PromptMongoDataSource: Fetching prompt with ID ${dto.id}`);
+    logger.info(`PromptMongoDataSource: Fetching prompt with ID ${dto}`);
 
     try {
-      const prompt = await PromptModel.findOne({ id: dto.id, isActive: true });
+      const prompt = await PromptModel.findOne({ id: dto, isActive: true });
 
       if (!prompt) {
         throw CustomError.notFound("Prompt not found");
       }
 
-      logger.info(`PromptMongoDataSource: Found prompt with ID ${dto.id}`);
+      logger.info(`PromptMongoDataSource: Found prompt with ID ${dto}`);
 
       return PromptMapper.toEntity(prompt);
     } catch (error: unknown) {
@@ -74,7 +75,7 @@ class PromptMongoDataSource implements PromptDataSource {
    * @param dto DTO que contiene los datos para crear el prompt.
    * @returns PromptEntity creado.
    */
-  async createPrompt(dto: CreatePromptDTO): Promise<PromptEntity> {
+  async createPrompt(dto: UploadToDbDTO): Promise<PromptEntity> {
     logger.info(`PromptMongoDataSource: Creating a new prompt`);
 
     try {

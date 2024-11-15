@@ -1,24 +1,65 @@
-export class GetPromptDTO {
-  id!: string;
+// src/domain/dtos/prompt.dto.ts
+import Joi from "joi";
+import {
+  MainFilter,
+  ProductType,
+  TypeFilter,
+  SortBy,
+  Model,
+  Category,
+  GeneralCategory,
+  Tag,
+} from "../../enums"; // Asegúrate de importar las enums correctamente
+
+export interface GetPromptDTO {
+  mainFilter?: MainFilter;
+  productType?: ProductType;
+  typeFilter?: TypeFilter;
+  sortBy?: SortBy;
+  model?: Model;
+  categories?: Category[];
+  generalCategories?: GeneralCategory[];
+  tags?: Tag[];
+  page?: number;
+  limit?: number;
+}
+
+export const GetPromptSchema = Joi.object({
+  mainFilter: Joi.string().valid(...Object.values(MainFilter)),
+  productType: Joi.string().valid(...Object.values(ProductType)),
+  typeFilter: Joi.string().valid(...Object.values(TypeFilter)),
+  sortBy: Joi.string().valid(...Object.values(SortBy)),
+  model: Joi.string().valid(...Object.values(Model)),
+  categories: Joi.array().items(Joi.string().valid(...Object.values(Category))),
+  generalCategories: Joi.array().items(
+    Joi.string().valid(...Object.values(GeneralCategory))
+  ),
+  tags: Joi.array().items(Joi.string().valid(...Object.values(Tag))),
+  page: Joi.number().integer().min(1).default(1),
+  limit: Joi.number().integer().min(1).max(100).default(10),
+});
+
+export class GetPromptDTO implements GetPromptDTO {
+  mainFilter?: MainFilter;
+  productType?: ProductType;
+  typeFilter?: TypeFilter;
+  sortBy?: SortBy;
+  model?: Model;
+  categories?: Category[];
+  generalCategories?: GeneralCategory[];
+  tags?: Tag[];
+  page?: number;
+  limit?: number;
 
   static create(
-    data: Partial<GetPromptDTO>
-  ): [string | null, GetPromptDTO | null] {
-    const dto = new GetPromptDTO();
-    Object.assign(dto, data);
-
-    const errors: string[] = [];
-
-    if (!dto.id) {
-      errors.push("Prompt ID is required");
-    } else if (typeof dto.id !== "string") {
-      errors.push("Prompt ID must be a string");
+    params: any
+  ): [Joi.ValidationError | null, GetPromptDTO | null] {
+    const { error, value } = GetPromptSchema.validate(params, {
+      abortEarly: false,
+    });
+    if (error) {
+      return [error, null];
     }
-
-    if (errors.length > 0) {
-      return [errors.join(", "), null];
-    }
-
-    return [null, dto];
+    return [null, value];
   }
 }

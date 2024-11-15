@@ -118,17 +118,26 @@ export class UserAuthController {
         googleAuthCodeDTO!
       );
 
-      res.cookie("refreshToken", response.refreshToken, {
+      // Establecer el accessToken como cookie HTTP-Only
+      res.cookie("accessToken", response.accessToken, {
         httpOnly: true,
-        secure: true,
+        secure: process.env.NODE_ENV === "production", // Asegúrate de usar HTTPS en producción
         sameSite: "strict",
-        maxAge: 3600 * 24 * 7, // 7 días
+        maxAge: 15 * 60 * 1000, // 15 minutos
       });
 
-      res.status(200).json({
-        accessToken: response.accessToken,
-        message: "Login with Google successful",
+      // Establecer el refreshToken como cookie HTTP-Only
+      res.cookie("refreshToken", response.refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 días
       });
+
+      // Redirigir al frontend con el access token y la URL de redirección
+      const frontendRedirectUrl = new URL("http:localhost:4200");
+
+      res.redirect(frontendRedirectUrl.toString());
     } catch (error) {
       next(error);
     }

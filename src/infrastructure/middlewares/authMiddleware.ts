@@ -1,41 +1,75 @@
-// src/core/middleware/authenticate.ts
-
 import { Request, Response, NextFunction } from "express";
-import jwt from "jsonwebtoken";
-import { UserRepository } from "../../domain/repositories";
 import { CustomError } from "../../domain/errors";
-import { env } from "../../core/config/env";
+import { JwtAdapter } from "../../core/adapters/jwt.adapter";
 
-export const authenticate = (userRepository: UserRepository) => {
-  return async (req: Request, res: Response, next: NextFunction) => {
+export interface RequestUserPayload {
+  id: string;
+  role?: string;
+}
+
+export class AuthMiddleware {
+  /**
+   * Middleware para validar el token JWT y verificar si el usuario es administrador.
+   * @param req Request - La solicitud HTTP.
+   * @param res Response - La respuesta HTTP.
+   * @param next NextFunction - La función para pasar al siguiente middleware.
+   */
+
+  public static validateAdminToken = async (
+    req: Request,
+    res: Response,
+    next: NextFunction
+  ) => {
     try {
-      const authHeader = req.headers.authorization;
+      console.log("AuthMiddleware.validateAdminToken");
 
-      if (!authHeader || !authHeader.startsWith("Bearer ")) {
-        throw CustomError.unauthorized("Token de acceso faltante o inválido");
+      // Extraer el token desde las cookies en lugar del encabezado Authorization
+      const token = AuthMiddleware.extractToken(req);
+
+      console.log("token: ", token);
+
+      if (!token) {
+        throw CustomError.unauthorized("No token provided");
       }
 
-      const token = authHeader.split(" ")[1];
-      const decoded = jwt.verify(token, env.jwtAccessSecret) as {
-        userId: string;
-        iat: number;
-        exp: number;
-      };
+      // Validar el token JWT
+      const payload = new JwtAdapter().verifyAccessToken(token);
 
-      // Opcional: Cargar el perfil del usuario
-      const user = await userRepository.findById({ id: decoded.userId });
-
-      if (!user) {
-        throw CustomError.notFound("Usuario no encontrado");
+      if (!payload) {
+        throw CustomError.unauthorized("Invalid token");
       }
 
-      // Adjuntar el userId y el perfil del usuario al objeto req
-      (req as any).userId = decoded.userId;
-      (req as any).user = user;
+      console.log(payload);
 
+      //TODO: Verificar si el usuario tiene el rol de administrador
+      // if (payload.role !== "admin") {
+      //   throw CustomError.forbidden("User is not authorized");
+      // }
+
+      //Verify if had userId
+
+      if (!payload.userId) throw CustomError.forbidden("User not Found");
+
+      req.user = {
+        id: payload.userId,
+      } as RequestUserPayload;
+
+      // Continuar al siguiente middleware
       next();
     } catch (error) {
-      next(error);
+      next(error); // Pasar el error al middleware de manejo de errores
     }
   };
-};
+
+  /**
+   * Extrae el token desde las cookies.
+   * @param req Request - La solicitud HTTP.
+   * @returns El token extraído o null si no es válido.
+   */
+  private static extractToken(req: Request): string | null {
+    // Extraer la cookie llamada 'access-token'
+    console.log("las cookies: ", req.headers);
+    const token = req.cookies["accessToken"];
+    return token || null; // Devolver el token o null si no existe
+  }
+}

@@ -52,6 +52,14 @@ export const env = {
   googleClientId: getEnvVar("GOOGLE_CLIENT_ID"),
   googleClientSecret: getEnvVar("GOOGLE_CLIENT_SECRET"),
   googleRedirectUri: getEnvVar("GOOGLE_REDIRECT_URI"),
+  awsRegion: getEnvVar("AWS_REGION"),
+  awsAccessKeyId: getEnvVar("AWS_ACCESS_KEY_ID"),
+  awsSecretAccessKey: getEnvVar("AWS_SECRET_ACCESS_KEY"),
+  awsBucketName: getEnvVar("AWS_BUCKET_NAME"),
+
+  redisHost: getEnvVar("REDIS_HOST"),
+  redisPort: getEnvVarNumberOptional("REDIS_PORT"),
+  // redisPassword: getEnvVar("REDIS_PASSWORD"),
 
   // Variables de entorno obligatorias para el correo electrónico
   //   emailUser: getEnvVar("IONOS_EMAIL_USER"),

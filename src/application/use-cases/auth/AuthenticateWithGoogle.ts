@@ -22,7 +22,7 @@ import { CreateUserDTO } from "../../../domain/dtos/user";
 import { RefreshTokenDTO } from "../../../domain/dtos/token";
 
 export class AuthenticateWithGoogle {
-  private jwtAdapter = new JwtAdapter(process.env.JWT_SECRET || "secret");
+  private jwtAdapter = new JwtAdapter();
   private uuidAdapter = uuid;
   private googleAuthAdapter = new GoogleAuthAdapter();
 
@@ -67,7 +67,9 @@ export class AuthenticateWithGoogle {
         findByProviderIdDTO!
       );
 
-      if (!auth) {
+      console.log("auth: ", auth);
+
+      if (auth === null) {
         // 5. Crear nuevo usuario
         const userId = this.uuidAdapter.generate();
 
@@ -92,13 +94,13 @@ export class AuthenticateWithGoogle {
           id: this.uuidAdapter.generate(),
           userId,
           method: authenticateDTO.method,
+          providerId: authenticateDTO.providerId,
+          email: authenticateDTO.email,
           emailVerified: true,
           createdAt: new Date(),
           updatedAt: new Date(),
-          providerId: authenticateDTO.providerId,
-          email: authenticateDTO.email,
         });
-        console.log("auth: ", auth);
+        console.log("auth dentro de if: ", auth);
 
         const [authError, newAuth] = RegisterUserDTO.create(auth);
 
@@ -113,15 +115,15 @@ export class AuthenticateWithGoogle {
       }
 
       // 7. Generar tokens
-      const accessToken = tokens.access_token;
-      const refreshTokenStr = tokens.refresh_token;
+      const accessToken = this.jwtAdapter.generateAccessToken(auth!.userId);
+      const refreshTokenStr = this.jwtAdapter.generateRefreshToken(auth!.id);
 
       // 8.  Almacenar RefreshToken
       const expiresAt = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000); // 7 días
 
       const [error, refreshTokenDTO] = RefreshTokenDTO.create({
         token: refreshTokenStr,
-        userId: auth.id,
+        userId: auth!.id,
         expiresAt,
         createdAt: new Date(),
       });

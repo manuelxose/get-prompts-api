@@ -74,6 +74,7 @@ class MongoAuthDataSource implements AuthDataSource {
       emailVerified: registerUserDTO.emailVerified || false,
       password: registerUserDTO.password,
       email: registerUserDTO.email,
+      providerId: registerUserDTO.providerId || "",
       createdAt: new Date(),
       updatedAt: new Date(),
     });

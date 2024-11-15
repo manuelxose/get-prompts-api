@@ -1,66 +1,48 @@
-// src/domain/dtos/prompt/CreatePromptDTO.ts
-
-import { Validators } from "../../../shared/validators";
-import { CountryCode, PromptCategory } from "../../enums";
-import { ImageInput } from "../../models/image/imageInput.model";
-import { PromptConfig, Rating, Review } from "../../models/prompt";
-
-/**
- * Clase DTO para la creación de un prompt.
- */
-export class CreatePromptDTO {
-  id!: string; // UUID generado externamente
-  userId!: string; // ID del usuario que crea el prompt
-  category!: PromptCategory;
+export class UploadToDbDTO {
+  id!: string;
+  userId!: string;
+  category!: string;
   name!: string;
   shortDescription!: string;
-  price!: number;
-  country!: CountryCode;
-  config!: PromptConfig;
-  images!: ImageInput[]; // Array de imágenes a subir
-
-  // Campos opcionales
   fullDescription?: string;
+  price!: number;
   customPrice?: number;
+  country!: string;
   tags?: string[];
   isActive?: boolean;
   views?: number;
   likes?: number;
+  config?: any;
+  images?: string[];
+  ratings?: any[]; // Define adecuadamente si implementas ratings
+  reviews?: any[]; // Define adecuadamente si implementas reviews
   salesCount?: number;
-  ratings?: Rating[]; // Define adecuadamente si implementas ratings
-  reviews?: Review[]; // Define adecuadamente si implementas reviews
 
-  /**
-   * Método estático para crear una instancia de CreatePromptDTO con validaciones.
-   * @param data Datos parciales para la creación del prompt.
-   * @returns Un arreglo con un posible mensaje de error y la instancia de CreatePromptDTO.
-   */
   static create(
-    data: Partial<CreatePromptDTO>
-  ): [string | null, CreatePromptDTO | null] {
-    const dto = new CreatePromptDTO();
+    data: Partial<UploadToDbDTO>
+  ): [string | null, UploadToDbDTO | null] {
+    const dto = new UploadToDbDTO();
     Object.assign(dto, data);
 
     const errors: string[] = [];
 
-    // Validaciones de campos principales
-    if (!Validators.isValidUUID(dto.id)) {
+    if (!dto.id) {
       errors.push("ID es requerido y debe ser un UUID válido.");
     }
 
-    if (!Validators.isValidUUID(dto.userId)) {
+    if (!dto.userId) {
       errors.push("userId es requerido y debe ser un UUID válido.");
     }
 
-    if (!Validators.isValidCategory(dto.category)) {
+    if (!dto.category) {
       errors.push("Category es requerida y debe ser válida.");
     }
 
-    if (!Validators.isValidString(dto.name)) {
+    if (!dto.name) {
       errors.push("Name es requerido y debe ser una cadena válida.");
     }
 
-    if (!Validators.isValidString(dto.shortDescription)) {
+    if (!dto.shortDescription) {
       errors.push(
         "Short description es requerida y debe ser una cadena válida."
       );
@@ -70,26 +52,16 @@ export class CreatePromptDTO {
       errors.push("Price es requerido y debe ser un número positivo.");
     }
 
-    if (!Validators.isValidCountryCode(dto.country)) {
+    if (!dto.country) {
       errors.push("Country es requerido y debe ser un código de país válido.");
     }
 
-    if (!Validators.isValidPromptConfig(dto.config)) {
+    if (!dto.config) {
       errors.push("Config es requerida y debe ser válida.");
     }
 
     if (!Array.isArray(dto.images) || dto.images.length === 0) {
       errors.push("Images es requerido y debe ser un array no vacío.");
-    } else {
-      // Validar cada imagen
-      dto.images.forEach((image, index) => {
-        if (!Buffer.isBuffer(image.buffer)) {
-          errors.push(`Image at index ${index} must be a valid Buffer.`);
-        }
-        if (!Validators.isValidString(image.filename)) {
-          errors.push(`Image at index ${index} must have a valid filename.`);
-        }
-      });
     }
 
     // Validaciones de campos opcionales
@@ -120,6 +92,14 @@ export class CreatePromptDTO {
 
     if (dto.likes !== undefined && typeof dto.likes !== "number") {
       errors.push("likes debe ser un número si se proporciona.");
+    }
+
+    if (dto.ratings && !Array.isArray(dto.ratings)) {
+      errors.push("ratings debe ser un array si se proporciona.");
+    }
+
+    if (dto.reviews && !Array.isArray(dto.reviews)) {
+      errors.push("reviews debe ser un array si se proporciona.");
     }
 
     if (dto.salesCount !== undefined && typeof dto.salesCount !== "number") {

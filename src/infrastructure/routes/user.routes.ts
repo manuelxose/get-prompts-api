@@ -2,7 +2,6 @@
 
 import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
-import { authenticate } from "../middlewares/authMiddleware";
 import { UserDataSource } from "../datasources";
 import { UserRepository } from "../repositories";
 import {
@@ -11,6 +10,7 @@ import {
   UpdateUserProfile,
 } from "../../application/use-cases/user";
 import { asyncHandler } from "../../core/utils";
+import { AuthMiddleware } from "../middlewares/authMiddleware";
 
 export class UserRoutes {
   public router: Router;
@@ -45,6 +45,13 @@ export class UserRoutes {
   }
 
   private initializeRoutes(): void {
+    // Definir rutas específicas antes de las rutas genéricas
+    this.router.get(
+      "/me",
+      AuthMiddleware.validateAdminToken, // Middleware de autenticación
+      asyncHandler(this.controller.getProfile.bind(this.controller))
+    );
+
     this.router.put(
       "/:id",
       asyncHandler(this.controller.updateProfile.bind(this.controller))

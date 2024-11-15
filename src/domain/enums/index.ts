@@ -6,4 +6,5 @@ export * from "./gptEngine.enum";
 export * from "./authMethod.enum";
 export * from "./userRole.enum";
 export * from "./tokenType.enum";
+export * from "./promptFilter.enum";
 // Exporta otros enums aquí
