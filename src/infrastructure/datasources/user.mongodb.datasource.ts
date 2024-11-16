@@ -59,28 +59,28 @@ class MongoUserDataSource implements UserDataSource {
   }
 
   // Actualizar el perfil de un usuario existente
-  async update(updateUserProfileDTO: UpdateUserDTO): Promise<UserEntity> {
-    // Verificar si el email se está actualizando y si ya está en uso por otro usuario
-    if (updateUserProfileDTO.id) {
-      const existingUserWithEmail = await UserModel.findOne({
-        email: updateUserProfileDTO.id,
-      });
-
-      if (
-        existingUserWithEmail &&
-        existingUserWithEmail.id !== updateUserProfileDTO.id
-      ) {
-        throw CustomError.badRequest("Email already in use by another user");
-      }
-    }
-
-    // Encontrar y actualizar el usuario
-    const updatedUser = await UserModel.findOneAndUpdate(
-      { id: updateUserProfileDTO.id },
-      {
-        ...updateUserProfileDTO,
+  async update(dto: UpdateUserDTO): Promise<UserEntity> {
+    // Inicializar el objeto para la actualización con los campos normales
+    const updateFields: any = {
+      $set: {
+        ...dto,
         updatedAt: new Date(),
       },
+    };
+
+    // Si promptsPublished tiene elementos, agregarlos al array existente
+    if (dto.promptsPublished && dto.promptsPublished.length > 0) {
+      updateFields.$addToSet = {
+        promptsPublished: { $each: dto.promptsPublished },
+      };
+      // Eliminar promptsPublished de $set para evitar conflicto
+      delete updateFields.$set.promptsPublished;
+    }
+
+    // Actualizar y devolver el usuario actualizado en una sola operación
+    const updatedUser = await UserModel.findOneAndUpdate(
+      { id: dto.id },
+      updateFields,
       { new: true, runValidators: true }
     );
 

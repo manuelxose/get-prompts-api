@@ -1,11 +1,13 @@
 // src/application/use-cases/prompt/createPrompt.use-case.ts
 
 import { CreatePromptDTO, UploadToDbDTO } from "../../../domain/dtos/prompt";
+import { UpdateUserDTO } from "../../../domain/dtos/user";
 import { PromptEntity } from "../../../domain/entities/prompt";
 import { CustomError } from "../../../domain/errors";
 import {
   ImageRepository,
   PromptRepository,
+  UserRepository,
 } from "../../../domain/repositories";
 
 /**
@@ -14,7 +16,8 @@ import {
 export class CreatePromptUseCase {
   constructor(
     private promptRepository: PromptRepository,
-    private imageRepository: ImageRepository
+    private imageRepository: ImageRepository,
+    private userRepository: UserRepository
   ) {}
   /**
    * Ejecutar el caso de uso para crear un prompt.
@@ -34,14 +37,21 @@ export class CreatePromptUseCase {
             "Cada imagen debe tener un buffer y un filename válido."
           );
         }
+        console.log("buffer: ", buffer);
+        console.log("filename: ", filename);
 
         const imageUrl = await this.imageRepository.uploadImage(
           buffer,
           filename
         );
+
+        console.log("imageUrl: ", imageUrl);
+        if (!imageUrl) {
+          throw CustomError.internal("Error al subir la imagen");
+        }
+
         uploadedImageUrls.push(imageUrl);
       }
-
       // Crear DTO para la base de datos
       const uploadDTO: UploadToDbDTO = {
         ...createPromptDTO,
@@ -52,6 +62,18 @@ export class CreatePromptUseCase {
       const createdPrompt: PromptEntity = await this.promptRepository.create(
         uploadDTO
       );
+
+      //Si el prompt se crea con exito, se debe añadir al usuario
+      const [errr, updateDTO] = UpdateUserDTO.create({
+        id: createdPrompt.userId,
+        promptsPublished: [createdPrompt.id],
+      });
+
+      if (errr) {
+        throw CustomError.badRequest(errr);
+      }
+
+      await this.userRepository.update(updateDTO!);
 
       return createdPrompt;
     } catch (error: any) {
@@ -66,7 +88,7 @@ export class CreatePromptUseCase {
         throw error;
       }
 
-      throw CustomError.internal("Error al crear el prompt.");
+      throw CustomError.internal("Error al crear el prompt: " + error);
     }
   }
 

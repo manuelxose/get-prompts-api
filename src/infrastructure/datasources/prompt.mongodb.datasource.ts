@@ -79,24 +79,8 @@ class PromptMongoDataSource implements PromptDataSource {
     logger.info(`PromptMongoDataSource: Creating a new prompt`);
 
     try {
-      // Verificar si el usuario existe
-      // Asumiendo que tienes un UserDataSource para verificar la existencia del usuario
-      // const user = await this.userDataSource.findById({ id: dto.userId });
-      // if (!user) throw CustomError.notFound("User not found");
-
-      // Verificar si ya existe un prompt con el mismo nombre para el mismo usuario
-      const existingPrompt = await PromptModel.findOne({
-        name: dto.name,
-        userId: dto.userId,
-      });
-
-      if (existingPrompt) {
-        throw CustomError.badRequest("Prompt with this name already exists");
-      }
-
       // Crear una nueva instancia de PromptModel
       const newPrompt = new PromptModel({
-        id: dto.id,
         userId: dto.userId,
         category: dto.category,
         name: dto.name,
@@ -118,7 +102,9 @@ class PromptMongoDataSource implements PromptDataSource {
 
       await newPrompt.save();
 
-      logger.info(`PromptMongoDataSource: Created prompt with ID ${dto.id}`);
+      logger.info(
+        `PromptMongoDataSource: Created prompt for user ID ${dto.userId}`
+      );
 
       return PromptMapper.toEntity(newPrompt);
     } catch (error: unknown) {

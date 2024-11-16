@@ -1,6 +1,5 @@
-// src/adapters/FileUploadAdapter.ts
 import formidable, { Fields, Files } from "formidable";
-import { IncomingMessage } from "http"; // Import IncomingMessage from http module
+import { IncomingMessage } from "http";
 import fs from "fs";
 
 interface FileUploadResult {
@@ -12,10 +11,10 @@ export class FileUploadAdapter {
   private form: InstanceType<typeof formidable.IncomingForm>;
 
   constructor() {
-    this.form = new formidable.IncomingForm({
+    this.form = formidable({
       multiples: true,
       keepExtensions: true,
-    });
+    }) as InstanceType<typeof formidable.IncomingForm>;
   }
 
   public async parse(req: IncomingMessage): Promise<FileUploadResult> {
@@ -29,7 +28,7 @@ export class FileUploadAdapter {
 
   public async readFileAsBuffer(filepath: string): Promise<Buffer> {
     return new Promise((resolve, reject) => {
-      fs.readFile(filepath, (err: any, data: Buffer) => {
+      fs.readFile(filepath, (err, data) => {
         if (err) reject(err);
         else resolve(data);
       });

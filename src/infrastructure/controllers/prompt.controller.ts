@@ -18,20 +18,15 @@ import {
 import { CustomError } from "../../domain/errors";
 import logger from "../../core/adapters/logger.adapter";
 import { FileUploadAdapter } from "../../core/adapters/FileUploadAdapter";
-import { ImageInput } from "../../domain/models/image/imageInput.model";
 
 export class PromptController {
-  private fileUploadAdapter: FileUploadAdapter;
-
   constructor(
     private createPromptUseCase: CreatePromptUseCase,
     private getPromptUseCase: GetPromptUseCase,
     private getpromptByIdUseCase: GetPromptByIdUseCase,
     private updatePromptUseCase: UpdatePromptUseCase,
     private deletePromptUseCase: DeletePromptUseCase
-  ) {
-    this.fileUploadAdapter = new FileUploadAdapter();
-  }
+  ) {}
   /**
    * Manejar la creación de un nuevo prompt.
    * @param req Request de Express.
@@ -44,38 +39,22 @@ export class PromptController {
     next: NextFunction
   ): Promise<void> {
     try {
-      // Parsear la solicitud utilizando el adaptador de Formidable
-      const { fields, files } = await this.fileUploadAdapter.parse(req);
-
-      // Extraer y transformar los archivos en ImageInput[]
-      const images: ImageInput[] = [];
-
-      // Suponiendo que el campo de archivos es 'images' y puede ser múltiple
-      const uploadedFiles = Array.isArray(files.images)
-        ? files.images
-        : [files.images];
-
-      for (const file of uploadedFiles) {
-        if (file && "filepath" in file) {
-          const buffer = await this.fileUploadAdapter.readFileAsBuffer(
-            file.filepath
-          );
-          const filename = file.originalFilename || "unknown";
-
-          images.push({ buffer, filename });
-        }
-      }
+      const data = req.body;
 
       // Crear el DTO con los campos y las imágenes
-      const [error, createPromptDTO] = CreatePromptDTO.create({
-        ...fields,
-        images, // Asignar las imágenes subidas como ImageInput[]
-      });
+      const [error, createPromptDTO] = CreatePromptDTO.create(data);
 
       if (error || !createPromptDTO) {
-        throw CustomError.badRequest("Validación fallida.");
+        console.log("Error de validación en createPromptDTO:", error);
+        console.log(
+          "Contenido de createPromptDTO después de crear:",
+          createPromptDTO
+        );
+        throw CustomError.badRequest(
+          "Error al crear el prompt. Detalle: " +
+            (error || "Problema desconocido")
+        );
       }
-
       // Ejecutar el caso de uso para crear el prompt
       const createdPrompt = await this.createPromptUseCase.execute(
         createPromptDTO
@@ -116,6 +95,7 @@ export class PromptController {
 
   async getPrompts(req: Request, res: Response, next: NextFunction) {
     try {
+      console.log("Metodo de getPrompts");
       const [error, getPromptDTO] = GetPromptDTO.create(req.params);
 
       if (error) {

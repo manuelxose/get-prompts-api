@@ -35,7 +35,7 @@ export interface DALLEConfig {
   prompt: string;
   testingPrompt: string;
   promptInstructions: string;
-  images: string[]; // URLs of uploaded images
+  images?: string[]; // URLs of uploaded images
 }
 
 export interface LeonardoAIConfig {

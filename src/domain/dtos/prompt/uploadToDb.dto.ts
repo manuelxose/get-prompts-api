@@ -1,5 +1,5 @@
 export class UploadToDbDTO {
-  id!: string;
+  id?: string;
   userId!: string;
   category!: string;
   name!: string;

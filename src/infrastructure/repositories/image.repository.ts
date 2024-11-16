@@ -3,7 +3,7 @@
 import { ImageRepository } from "../../domain/repositories/image.repository";
 import { ImageDataSource } from "../datasources";
 
-export class ImageRepositoryImpl implements ImageRepository {
+class ImageRepositoryImpl implements ImageRepository {
   constructor(private readonly imageDataSource: ImageDataSource) {}
 
   /**
@@ -24,3 +24,5 @@ export class ImageRepositoryImpl implements ImageRepository {
     return this.imageDataSource.deleteImage(id);
   }
 }
+
+export { ImageRepositoryImpl as ImageRepository };

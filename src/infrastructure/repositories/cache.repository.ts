@@ -3,7 +3,7 @@ import { PromptEntity } from "../../domain/entities/prompt";
 import { CacheRepository } from "../../domain/repositories";
 import { CacheDataSource } from "../datasources";
 
-export class CacheRedisRepository implements CacheRepository {
+class CacheRedisRepository implements CacheRepository {
   constructor(private readonly cacheDataSource: CacheDataSource) {}
 
   async get<T>(key: string): Promise<PaginatedPrompt<PromptEntity> | null> {
@@ -18,3 +18,5 @@ export class CacheRedisRepository implements CacheRepository {
     await this.cacheDataSource.delete(key);
   }
 }
+
+export { CacheRedisRepository as CacheRepository };

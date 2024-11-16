@@ -209,7 +209,7 @@ export class Validators {
   }
 
   static isValidPromptConfig(value: any): boolean {
-    return value instanceof PromptConfigDTO;
+    return value instanceof PromptConfigDTO || typeof value === "object";
   }
 
   static isValidCategory(value: any): boolean {

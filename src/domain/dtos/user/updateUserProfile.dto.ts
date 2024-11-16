@@ -21,6 +21,7 @@ export class UpdateUserDTO {
   acceptCustomJobs?: boolean;
   role?: UserRole;
   countryCode?: CountryCode;
+  promptsPublished?: string[];
 
   static create(
     data: Partial<UpdateUserDTO>

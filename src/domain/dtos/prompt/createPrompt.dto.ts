@@ -2,6 +2,7 @@
 
 import { Validators } from "../../../shared/validators";
 import { CountryCode, PromptCategory } from "../../enums";
+import { CustomError } from "../../errors";
 import { ImageInput } from "../../models/image/imageInput.model";
 import { PromptConfig, Rating, Review } from "../../models/prompt";
 
@@ -9,7 +10,7 @@ import { PromptConfig, Rating, Review } from "../../models/prompt";
  * Clase DTO para la creación de un prompt.
  */
 export class CreatePromptDTO {
-  id!: string; // UUID generado externamente
+  id?: string; // UUID generado externamente
   userId!: string; // ID del usuario que crea el prompt
   category!: PromptCategory;
   name!: string;
@@ -39,14 +40,35 @@ export class CreatePromptDTO {
     data: Partial<CreatePromptDTO>
   ): [string | null, CreatePromptDTO | null] {
     const dto = new CreatePromptDTO();
+
     Object.assign(dto, data);
 
     const errors: string[] = [];
 
-    // Validaciones de campos principales
-    if (!Validators.isValidUUID(dto.id)) {
-      errors.push("ID es requerido y debe ser un UUID válido.");
+    if (data.images) {
+      dto.images = data.images.map((image) => {
+        if (!image.data) {
+          throw CustomError.badRequest("Image data is required");
+        }
+        const buffer = Buffer.from(image.data.split(",")[1], "base64"); // Convertir Base64 a Buffer
+
+        if (!image.filename) {
+          throw CustomError.badRequest("Image filename is required");
+        }
+        if (!Validators.isValidString(image.filename)) {
+          throw CustomError.badRequest("Image filename must be a string");
+        }
+        return {
+          buffer,
+          filename: image.filename,
+        };
+      });
     }
+
+    // Validaciones de campos principales
+    // if (!Validators.isValidUUID(dto.id)) {
+    //   errors.push("ID es requerido y debe ser un UUID válido.");
+    // }
 
     if (!Validators.isValidUUID(dto.userId)) {
       errors.push("userId es requerido y debe ser un UUID válido.");

@@ -24,6 +24,29 @@ export class GetPromptByIdUseCase {
   ): Promise<PaginatedPrompt<PromptEntity> | null> {
     const { id } = getPromptByIdDTO;
 
+    // console.log("PromptController.createPrompt");
+    // // Parsear la solicitud utilizando el adaptador de Formidable
+    // const { fields, files } = await this.fileUploadAdapter.parse(req);
+
+    // // Extraer y transformar los archivos en ImageInput[]
+    // const images: ImageInput[] = [];
+
+    // // Suponiendo que el campo de archivos es 'images' y puede ser múltiple
+    // const uploadedFiles = Array.isArray(files.images)
+    //   ? files.images
+    //   : [files.images];
+
+    // for (const file of uploadedFiles) {
+    //   if (file && "filepath" in file) {
+    //     const buffer = await this.fileUploadAdapter.readFileAsBuffer(
+    //       file.filepath
+    //     );
+    //     const filename = file.originalFilename || "unknown";
+
+    //     images.push({ buffer, filename });
+    //   }
+    // }
+
     // Generar la clave de caché basada en el ID del prompt
     const cacheKey = generatePromptCacheKey(id);
 

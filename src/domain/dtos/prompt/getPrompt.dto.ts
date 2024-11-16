@@ -1,5 +1,3 @@
-// src/domain/dtos/prompt.dto.ts
-import Joi from "joi";
 import {
   MainFilter,
   ProductType,
@@ -9,7 +7,7 @@ import {
   Category,
   GeneralCategory,
   Tag,
-} from "../../enums"; // Asegúrate de importar las enums correctamente
+} from "../../enums";
 
 export interface GetPromptDTO {
   mainFilter?: MainFilter;
@@ -24,21 +22,6 @@ export interface GetPromptDTO {
   limit?: number;
 }
 
-export const GetPromptSchema = Joi.object({
-  mainFilter: Joi.string().valid(...Object.values(MainFilter)),
-  productType: Joi.string().valid(...Object.values(ProductType)),
-  typeFilter: Joi.string().valid(...Object.values(TypeFilter)),
-  sortBy: Joi.string().valid(...Object.values(SortBy)),
-  model: Joi.string().valid(...Object.values(Model)),
-  categories: Joi.array().items(Joi.string().valid(...Object.values(Category))),
-  generalCategories: Joi.array().items(
-    Joi.string().valid(...Object.values(GeneralCategory))
-  ),
-  tags: Joi.array().items(Joi.string().valid(...Object.values(Tag))),
-  page: Joi.number().integer().min(1).default(1),
-  limit: Joi.number().integer().min(1).max(100).default(10),
-});
-
 export class GetPromptDTO implements GetPromptDTO {
   mainFilter?: MainFilter;
   productType?: ProductType;
@@ -51,15 +34,83 @@ export class GetPromptDTO implements GetPromptDTO {
   page?: number;
   limit?: number;
 
-  static create(
-    params: any
-  ): [Joi.ValidationError | null, GetPromptDTO | null] {
-    const { error, value } = GetPromptSchema.validate(params, {
-      abortEarly: false,
-    });
-    if (error) {
-      return [error, null];
+  static create(params: any): [string | null, GetPromptDTO | null] {
+    const dto = new GetPromptDTO();
+
+    // Validación manual
+    try {
+      if (
+        params.mainFilter &&
+        !Object.values(MainFilter).includes(params.mainFilter)
+      ) {
+        throw new Error(`Invalid mainFilter: ${params.mainFilter}`);
+      }
+      if (
+        params.productType &&
+        !Object.values(ProductType).includes(params.productType)
+      ) {
+        throw new Error(`Invalid productType: ${params.productType}`);
+      }
+      if (
+        params.typeFilter &&
+        !Object.values(TypeFilter).includes(params.typeFilter)
+      ) {
+        throw new Error(`Invalid typeFilter: ${params.typeFilter}`);
+      }
+      if (params.sortBy && !Object.values(SortBy).includes(params.sortBy)) {
+        throw new Error(`Invalid sortBy: ${params.sortBy}`);
+      }
+      if (params.model && !Object.values(Model).includes(params.model)) {
+        throw new Error(`Invalid model: ${params.model}`);
+      }
+
+      if (params.categories) {
+        if (!Array.isArray(params.categories)) {
+          throw new Error("categories must be an array");
+        }
+        for (const category of params.categories) {
+          if (!Object.values(Category).includes(category)) {
+            throw new Error(`Invalid category: ${category}`);
+          }
+        }
+      }
+
+      if (params.generalCategories) {
+        if (!Array.isArray(params.generalCategories)) {
+          throw new Error("generalCategories must be an array");
+        }
+        for (const generalCategory of params.generalCategories) {
+          if (!Object.values(GeneralCategory).includes(generalCategory)) {
+            throw new Error(`Invalid generalCategory: ${generalCategory}`);
+          }
+        }
+      }
+
+      if (params.tags) {
+        if (!Array.isArray(params.tags)) {
+          throw new Error("tags must be an array");
+        }
+        for (const tag of params.tags) {
+          if (!Object.values(Tag).includes(tag)) {
+            throw new Error(`Invalid tag: ${tag}`);
+          }
+        }
+      }
+
+      dto.mainFilter = params.mainFilter;
+      dto.productType = params.productType;
+      dto.typeFilter = params.typeFilter;
+      dto.sortBy = params.sortBy;
+      dto.model = params.model;
+      dto.categories = params.categories;
+      dto.generalCategories = params.generalCategories;
+      dto.tags = params.tags;
+      dto.page = params.page ? Number(params.page) : 1;
+      dto.limit = params.limit ? Math.min(Number(params.limit), 100) : 10;
+
+      return [null, dto];
+    } catch (validationError: any) {
+      return [validationError.message, null];
     }
-    return [null, value];
   }
 }
